@@ -1,0 +1,101 @@
+from pymed import PubMed
+from sentence_transformers import SentenceTransformer, util
+
+
+class ClaimVerificationService:
+    def __init__(self):
+        self.pubmed = PubMed(
+            tool="HealthClaimVerifier", email="your_email@example.com"
+        )  # Replace with your email
+        self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    def search_pubmed(self, query, max_results=5):
+        """
+        Searches PubMed for articles related to a query.
+
+        Args:
+            query: The search query string.
+            max_results: The maximum number of results to return.
+
+        Returns:
+            A list of PubMed articles (dictionaries).
+        """
+        try:
+            results = self.pubmed.query(query, max_results=max_results)
+            articles = []
+            for article in results:
+                articles.append(
+                    {
+                        "title": article.title,
+                        "abstract": article.abstract,
+                        "url": article.url,
+                    }
+                )
+            return articles
+        except Exception as e:
+            print(f"Error searching PubMed: {e}")
+            return []
+
+    def calculate_similarity(self, claim, abstract):
+        """
+        Calculates the cosine similarity between a claim and an abstract using a Sentence Transformer model.
+
+        Args:
+            claim: The health claim string.
+            abstract: The abstract string.
+
+        Returns:
+            A similarity score (float) between 0 and 1.
+        """
+        if not abstract:  # Handle cases where the abstract might be empty or None
+            return 0.0
+
+        claim_embedding = self.similarity_model.encode(claim, convert_to_tensor=True)
+        abstract_embedding = self.similarity_model.encode(
+            abstract, convert_to_tensor=True
+        )
+        similarity = util.pytorch_cos_sim(claim_embedding, abstract_embedding).item()
+        return similarity
+
+    def verify_claim(self, claim, max_results=5, similarity_threshold=0.3):
+        """
+        Verifies a health claim against PubMed articles.
+
+        Args:
+            claim: The health claim string.
+            max_results: The maximum number of PubMed articles to retrieve.
+            similarity_threshold: The minimum similarity score to consider an abstract as supporting evidence.
+
+        Returns:
+            A dictionary with:
+                - verification_status: (str) "Verified", "Questionable", or "Debunked"
+                - supporting_evidence: (list) List of abstracts that support the claim.
+                - contradicting_evidence: (list) List of abstracts that contradict the claim.
+                - pubmed_results: (list) The raw PubMed search results.
+        """
+        pubmed_results = self.search_pubmed(claim, max_results)
+
+        supporting_evidence = []
+        contradicting_evidence = []
+
+        for article in pubmed_results:
+            similarity = self.calculate_similarity(claim, article["abstract"])
+
+            if similarity >= similarity_threshold:
+                supporting_evidence.append(article["abstract"])
+            else:
+                contradicting_evidence.append(article["abstract"])
+
+        if len(supporting_evidence) >= 2:
+            verification_status = "Verified"
+        elif len(supporting_evidence) > 0:
+            verification_status = "Questionable"
+        else:
+            verification_status = "Debunked"
+
+        return {
+            "verification_status": verification_status,
+            "supporting_evidence": supporting_evidence,
+            "contradicting_evidence": contradicting_evidence,
+            "pubmed_results": pubmed_results,
+        }

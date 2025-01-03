@@ -15,8 +15,37 @@
 
     <h2>Health Claims:</h2>
     <ul>
-      {% for claim in health_claims %}
-      <li>{{ claim }}</li>
+      {% for claim, result in verification_results.items %}
+      <li>
+        <strong>Claim:</strong> {{ claim }}<br />
+        <strong>Verification Status:</strong> {{ result.verification_status
+        }}<br />
+        {% if result.supporting_evidence %}
+        <strong>Supporting Evidence:</strong>
+        <ul>
+          {% for abstract in result.supporting_evidence %}
+          <li>{{ abstract }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %} {% if result.contradicting_evidence %}
+        <strong>Contradicting Evidence:</strong>
+        <ul>
+          {% for abstract in result.contradicting_evidence %}
+          <li>{{ abstract }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <strong>PubMed Results:</strong>
+        <ul>
+          {% for article in result.pubmed_results %}
+          <li>
+            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+            {% if article.abstract %}
+            <br />{{ article.abstract }} {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </li>
       {% endfor %}
     </ul>
   </body>

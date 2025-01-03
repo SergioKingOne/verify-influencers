@@ -4,3 +4,4 @@ tweepy
 transformers
 ollama
 sentence-transformers
+pymed

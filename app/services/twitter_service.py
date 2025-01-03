@@ -13,7 +13,7 @@ class TwitterService:
         # Initialize the Tweepy client
         self.client = tweepy.Client(bearer_token=self.bearer_token)
 
-    def get_tweets(self, username, num_tweets=50):
+    def get_tweets(self, username: str, num_tweets: int = 50) -> list[str] | None:
         """
         Fetches the most recent tweets from a given user.
 
@@ -42,6 +42,12 @@ class TwitterService:
             tweets = [tweet.text for tweet in response.data]
             return tweets
 
+        except tweepy.TooManyRequests as e:
+            print(f"Rate limit exceeded. Please wait before making more requests: {e}")
+            return None
+        except tweepy.NotFound as e:
+            print(f"User '{username}' not found: {e}")
+            return None
         except tweepy.TweepyException as e:
             print(f"Error fetching tweets: {e}")
             return None
