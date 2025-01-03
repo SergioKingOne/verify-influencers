@@ -5,10 +5,18 @@
   </head>
   <body>
     <h1>Influencer Detail Page</h1>
+
     <h2>Tweets:</h2>
     <ul>
       {% for tweet in tweets %}
       <li>{{ tweet }}</li>
+      {% endfor %}
+    </ul>
+
+    <h2>Extracted Health Claims:</h2>
+    <ul>
+      {% for claim in claims %}
+      <li>{{ claim }}</li>
       {% endfor %}
     </ul>
   </body>

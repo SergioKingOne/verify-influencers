@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, current_app  # Import current_app
+from flask import Blueprint, render_template, current_app
 from app.services.twitter_service import TwitterService
+from app.services.claim_extraction_service import ClaimExtractionService
 
 main = Blueprint("main", __name__)
 
@@ -11,15 +12,15 @@ def index():
 
 @main.route("/influencer")
 def influencer_detail():
-    # Create TwitterService instance within the app context
+    # Create service instances within the app context
     with current_app.app_context():
         twitter_service = TwitterService()
-        tweets = twitter_service.get_tweets(
-            "hubermanlab", 50
-        )  # Fetch tweets (replace with your influencer)
+        tweets = twitter_service.get_tweets("hubermanlab", 50)
+        claim_extraction_service = ClaimExtractionService()
+        claims = claim_extraction_service.extract_claims(tweets)
 
-    # Handle the case where tweets are None (due to an error)
     if tweets is None:
-        tweets = []  # Or you could display an error message on the page
+        tweets = []
 
-    return render_template("detail.html", tweets=tweets)
+    # Pass both tweets and claims to the template
+    return render_template("detail.html", tweets=tweets, claims=claims)
