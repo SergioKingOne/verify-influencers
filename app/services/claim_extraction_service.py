@@ -1,63 +1,64 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
+# app/services/claim_extraction_service.py
+import ollama
 
 
 class ClaimExtractionService:
     def __init__(self):
-        # Load the pre-trained BioBERT model and tokenizer
-        model_name = "dmis-lab/biobert-v1.1"
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self.model_name = "llama3.2:3b"
 
-        # Set the device (CPU or GPU if available)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-
-    def extract_claims(self, tweets, threshold=0.5):
+    def extract_health_claims(self, tweets):
         """
-        Extracts health claims from a list of tweets.
+        Extracts potential health claims from a list of tweets.
 
         Args:
             tweets: A list of strings (tweets).
-            threshold: The probability threshold above which a tweet is considered a claim.
 
         Returns:
-            A list of strings (the extracted claims).
+            A list of strings (potential health claims).
         """
-        claims = []
+        health_claims = []
         for tweet in tweets:
-            inputs = self.tokenizer(
-                tweet,
-                return_tensors="pt",
-                truncation=True,
-                padding=True,
-                max_length=512,  # Ensure input length is within model's limit
-            )
-            inputs = {
-                key: val.to(self.device) for key, val in inputs.items()
-            }  # Move inputs to device
+            prompt = f"""
+            Identify the health claim in the following tweet, if any. 
+            Answer with the health claim extracted word by word. 
+            If there is no health claim, answer with 'No health claim found.'.
 
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                probs = torch.softmax(outputs.logits, dim=1)[0]  # Get probabilities
+            Tweet: {tweet}
 
-            # Assuming the model's output is [not_claim, claim]
-            if probs[1] > threshold:
-                claims.append(tweet)
+            Health Claim:
+            """
+            try:
+                response = ollama.chat(
+                    model=self.model_name,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        },
+                    ],
+                )
 
-        return claims
+                claim = response["message"]["content"].strip()
+
+                if claim.lower() != "no health claim found.":
+                    health_claims.append(claim)
+            except Exception as e:
+                print(f"Error during claim extraction: {e}")
+                # Handle the error appropriately (e.g., log it, return an empty list, etc.)
+
+        return health_claims
 
 
-# Example usage (for testing)
+# Example usage (you can test this outside the class for now)
 if __name__ == "__main__":
     service = ClaimExtractionService()
     example_tweets = [
-        "New study shows that eating broccoli prevents cancer. #health #broccoli",
-        "I'm feeling great today! The weather is beautiful.",
-        "Taking vitamin C daily boosts your immune system.",
-        "This is just a random tweet about nothing in particular.",
-        "Clinical trials indicate that this new drug is highly effective in treating diabetes",
+        "Eating more fruits and vegetables can improve your immune system.",
+        "Just saw a beautiful sunset today!",
+        "New study shows that exercise reduces the risk of heart disease.",
     ]
-    extracted_claims = service.extract_claims(example_tweets)
+    extracted_claims = service.extract_health_claims(
+        example_tweets
+    )  # Corrected method name
     for claim in extracted_claims:
-        print(f"- {claim}")
+        print(claim)

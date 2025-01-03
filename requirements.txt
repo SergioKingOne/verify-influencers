@@ -2,3 +2,5 @@ Flask
 python-dotenv
 tweepy
 transformers
+ollama
+sentence-transformers

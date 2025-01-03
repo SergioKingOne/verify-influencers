@@ -12,15 +12,16 @@ def index():
 
 @main.route("/influencer")
 def influencer_detail():
-    # Create service instances within the app context
     with current_app.app_context():
         twitter_service = TwitterService()
         tweets = twitter_service.get_tweets("hubermanlab", 50)
+
         claim_extraction_service = ClaimExtractionService()
-        claims = claim_extraction_service.extract_claims(tweets)
+        health_claims = claim_extraction_service.extract_health_claims(tweets)
 
     if tweets is None:
         tweets = []
+    if health_claims is None:
+        health_claims = []
 
-    # Pass both tweets and claims to the template
-    return render_template("detail.html", tweets=tweets, claims=claims)
+    return render_template("detail.html", tweets=tweets, health_claims=health_claims)
