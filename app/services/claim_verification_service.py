@@ -1,5 +1,9 @@
+from typing import List, Dict, Any
 from pymed import PubMed
 from sentence_transformers import SentenceTransformer, util
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class ClaimVerificationService:
@@ -9,7 +13,7 @@ class ClaimVerificationService:
         )  # Replace with your email
         self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def search_pubmed(self, query, max_results=5):
+    def search_pubmed(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """
         Searches PubMed for articles related to a query.
 
@@ -18,22 +22,23 @@ class ClaimVerificationService:
             max_results: The maximum number of results to return.
 
         Returns:
-            A list of PubMed articles (dictionaries).
+            A list of PubMed articles with title, abstract, and URL.
+
+        Raises:
+            PubMedSearchError: If there's an error accessing PubMed.
         """
         try:
             results = self.pubmed.query(query, max_results=max_results)
-            articles = []
-            for article in results:
-                articles.append(
-                    {
-                        "title": article.title,
-                        "abstract": article.abstract,
-                        "url": article.url,
-                    }
-                )
-            return articles
+            return [
+                {
+                    "title": article.title,
+                    "abstract": article.abstract,
+                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{article.pmid}/",
+                }
+                for article in results
+            ]
         except Exception as e:
-            print(f"Error searching PubMed: {e}")
+            logger.error(f"Error searching PubMed: {e}")
             return []
 
     def calculate_similarity(self, claim, abstract):
