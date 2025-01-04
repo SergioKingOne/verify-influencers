@@ -2,6 +2,24 @@ from typing import List, Dict, Any
 from pymed import PubMed
 from sentence_transformers import SentenceTransformer, util
 from flask import current_app
+import json
+import ollama
+from pydantic import BaseModel
+from enum import Enum
+
+
+class VerificationStatus(str, Enum):
+    VERIFIED = "Verified"
+    QUESTIONABLE = "Questionable"
+    DEBUNKED = "Debunked"
+
+
+class VerificationResponse(BaseModel):
+    verification_status: VerificationStatus
+    explanation: str
+    supporting_points: List[str]
+    contradicting_points: List[str]
+    pubmed_results: List[Dict[str, str]]
 
 
 class ClaimVerificationService:
@@ -10,6 +28,7 @@ class ClaimVerificationService:
             tool="HealthClaimVerifier", email="sergiorobayoro@example.com"
         )  # Replace with your email
         self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model_name = "llama3.2:3b"
         current_app.logger.info("Initialized ClaimVerificationService")
 
     def search_pubmed(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
@@ -81,48 +100,78 @@ class ClaimVerificationService:
         similarity = util.pytorch_cos_sim(claim_embedding, abstract_embedding).item()
         return similarity
 
-    def verify_claim(self, claim, max_results=5, similarity_threshold=0.3):
+    def verify_claim(self, claim, max_results=5):
         """
-        Verifies a health claim against PubMed articles.
+        Verifies a health claim by searching PubMed articles and using LLM to analyze them.
 
         Args:
             claim: The health claim string.
             max_results: The maximum number of PubMed articles to retrieve.
-            similarity_threshold: The minimum similarity score to consider an abstract as supporting evidence.
 
         Returns:
-            A dictionary with:
-                - verification_status: (str) "Verified", "Questionable", or "Debunked"
-                - supporting_evidence: (list) List of abstracts that support the claim.
-                - contradicting_evidence: (list) List of abstracts that contradict the claim.
-                - pubmed_results: (list) The raw PubMed search results.
+            A dictionary with verification results and evidence.
         """
         pubmed_results = self.search_pubmed(claim, max_results)
 
-        supporting_evidence = []
-        contradicting_evidence = []
+        if not pubmed_results:
+            return VerificationResponse(
+                verification_status=VerificationStatus.QUESTIONABLE,
+                explanation="No relevant research articles found",
+                supporting_points=[],
+                contradicting_points=[],
+                pubmed_results=[],
+            ).model_dump()
 
-        for article in pubmed_results:
-            similarity = self.calculate_similarity(claim, article["abstract"])
+        prompt = f"""
+        Analyze this health claim against the following research articles:
 
-            if similarity >= similarity_threshold:
-                supporting_evidence.append(article["abstract"])
-            else:
-                contradicting_evidence.append(article["abstract"])
+        CLAIM: {claim}
 
-        if len(supporting_evidence) >= 2:
-            verification_status = "Verified"
-        elif len(supporting_evidence) > 0:
-            verification_status = "Questionable"
-        else:
-            verification_status = "Debunked"
+        RESEARCH ARTICLES:
+        """
 
-        return {
-            "verification_status": verification_status,
-            "supporting_evidence": supporting_evidence,
-            "contradicting_evidence": contradicting_evidence,
-            "pubmed_results": pubmed_results,
-        }
+        for i, article in enumerate(pubmed_results, 1):
+            prompt += f"""
+            Article {i}:
+            Title: {article['title']}
+            Abstract: {article['abstract']}
+            Source: {article['url']}
+            """
+
+        prompt += """
+        Based on these research articles, determine if the claim is:
+        - "Verified" (strong scientific support)
+        - "Questionable" (limited or mixed evidence)
+        - "Debunked" (contradicts evidence)
+        """
+
+        try:
+            response = ollama.chat(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                format=VerificationResponse.model_json_schema(),
+                options={"temperature": 0.1},
+            )
+
+            # Parse and validate response using Pydantic
+            verification_response = VerificationResponse.model_validate_json(
+                response["message"]["content"]
+            )
+
+            # Add PubMed results
+            verification_response.pubmed_results = pubmed_results
+
+            return verification_response.model_dump()
+
+        except Exception as e:
+            current_app.logger.error(f"Error during claim verification: {str(e)}")
+            return VerificationResponse(
+                verification_status=VerificationStatus.QUESTIONABLE,
+                explanation=f"Error during verification: {str(e)}",
+                supporting_points=[],
+                contradicting_points=[],
+                pubmed_results=pubmed_results,
+            ).model_dump()
 
     def calculate_trust_score(self, verification_results):
         """

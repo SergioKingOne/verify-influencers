@@ -14,7 +14,7 @@ def influencer_detail(username):
             # Get tweets and user info
             twitter_service = TwitterService()
             user_info = twitter_service.get_user_info(username)
-            tweets = twitter_service.get_tweets(username, 10)
+            tweets = twitter_service.get_tweets(username, 20)
 
             if tweets is None:
                 return (
