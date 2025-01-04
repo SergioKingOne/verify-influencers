@@ -4,40 +4,24 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import { mockLeaderboardData } from '@/mock/leaderboardData';
 
 const InfluencerLeaderboard = () => {
   const [activeCategory, setActiveCategory] = useState('All');
-  const [sortDirection, setSortDirection] = useState('desc'); // 'asc' or 'desc'
+  const [sortDirection, setSortDirection] = useState('desc');
 
-  const categories = ['All', 'Nutrition', 'Fitness', 'Medicine', 'Mental Health', 'Neuroscience', 'Longevity'];
+  // Use mock data in development mode
+  const data = import.meta.env.DEV ? mockLeaderboardData : null; // You'll replace null with your API data in production
 
-  const influencers = [
-    {
-      rank: 1,
-      name: 'Dr. Peter Attia',
-      category: 'Medicine',
-      trustScore: 94,
-      trend: 'up',
-      followers: '1.2M+',
-      claims: 203,
-      avatar: 'https://pbs.twimg.com/profile_images/1657444922720112640/2wZylqXh_400x400.jpg'
-    },
-    {
-      rank: 2,
-      name: 'Dr. Rhonda Patrick',
-      category: 'Nutrition',
-      trustScore: 91,
-      trend: 'up',
-      followers: '980K+',
-      claims: 156,
-      avatar: 'https://pbs.twimg.com/profile_images/1345797676437270528/ErV_QRBC_400x400.jpg'
-    },
-    // ... rest of the influencers data
-  ];
+  // Get unique categories from influencers data
+  const categories = useMemo(() => {
+    const uniqueCategories = ['All', ...new Set(data.influencers.map(inf => inf.category))];
+    return uniqueCategories;
+  }, [data.influencers]);
 
   // Filter and sort influencers
   const filteredInfluencers = useMemo(() => {
-    let filtered = [...influencers];
+    let filtered = [...data.influencers];
     
     // Apply category filter
     if (activeCategory !== 'All') {
@@ -51,18 +35,7 @@ const InfluencerLeaderboard = () => {
     });
     
     return filtered;
-  }, [influencers, activeCategory, sortDirection]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    return {
-      activeInfluencers: influencers.length,
-      totalClaims: influencers.reduce((sum, inf) => sum + inf.claims, 0),
-      averageScore: Math.round(
-        influencers.reduce((sum, inf) => sum + inf.trustScore, 0) / influencers.length * 10
-      ) / 10
-    };
-  }, [influencers]);
+  }, [data.influencers, activeCategory, sortDirection]);
 
   const toggleSort = () => {
     setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -87,7 +60,7 @@ const InfluencerLeaderboard = () => {
                 <Users className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{stats.activeInfluencers}</div>
+                <div className="text-2xl font-bold">{data.stats.activeInfluencers}</div>
                 <div className="text-sm text-gray-400">Active Influencers</div>
               </div>
             </CardContent>
@@ -99,7 +72,7 @@ const InfluencerLeaderboard = () => {
                 <CheckCircle className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{stats.totalClaims}</div>
+                <div className="text-2xl font-bold">{data.stats.claimsVerified}</div>
                 <div className="text-sm text-gray-400">Claims Verified</div>
               </div>
             </CardContent>
@@ -111,7 +84,7 @@ const InfluencerLeaderboard = () => {
                 <TrendingUp className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{stats.averageScore}%</div>
+                <div className="text-2xl font-bold">{data.stats.averageTrustScore}%</div>
                 <div className="text-sm text-gray-400">Average Trust Score</div>
               </div>
             </CardContent>
