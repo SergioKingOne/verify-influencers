@@ -1,73 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Influencer Detail</title>
-    <style>
-      .error-message {
-        color: red;
-        padding: 10px;
-        margin: 10px 0;
-        border: 1px solid red;
-        background-color: #ffe6e6;
-      }
-    </style>
+    <title>Health Influencer Verifier</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
-    <h1>Influencer Detail Page</h1>
-
-    {% with messages = get_flashed_messages() %} {% if messages %} {% for
-    message in messages %}
-    <div class="error-message">{{ message }}</div>
-    {% endfor %} {% endif %} {% endwith %} {% if not error %}
-    <h2>Tweets:</h2>
-    {% if tweets %}
-    <ul>
-      {% for tweet in tweets %}
-      <li>{{ tweet }}</li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p>No tweets found.</p>
-    {% endif %}
-
-    <h2>Health Claims:</h2>
-    {% if verification_results %}
-    <ul>
-      {% for claim, result in verification_results.items() %}
-      <li>
-        <strong>Claim:</strong> {{ claim }}<br />
-        <strong>Verification Status:</strong> {{ result.verification_status
-        }}<br />
-        {% if result.supporting_evidence %}
-        <strong>Supporting Evidence:</strong>
-        <ul>
-          {% for abstract in result.supporting_evidence %}
-          <li>{{ abstract }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %} {% if result.contradicting_evidence %}
-        <strong>Contradicting Evidence:</strong>
-        <ul>
-          {% for abstract in result.contradicting_evidence %}
-          <li>{{ abstract }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-        <strong>PubMed Results:</strong>
-        <ul>
-          {% for article in result.pubmed_results %}
-          <li>
-            <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-            {% if article.abstract %}
-            <br />{{ article.abstract }} {% endif %}
-          </li>
-          {% endfor %}
-        </ul>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p>No health claims found.</p>
-    {% endif %} {% endif %}
+    <div id="root"></div>
+    <script type="module" src="/frontend/src/main.jsx"></script>
   </body>
 </html>

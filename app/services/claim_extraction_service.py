@@ -5,7 +5,7 @@ from typing import List, Optional
 
 
 class HealthClaim(BaseModel):
-    text: str
+    claim: str
     confidence: float = 1.0  # Default confidence score
 
 
@@ -62,9 +62,9 @@ class ClaimExtractionService:
                 for claim in claims_response.claims:
                     if claim.confidence >= 0.7:  # Only include high confidence claims
                         current_app.logger.info(
-                            f"Found health claim: {claim.text} (confidence: {claim.confidence})"
+                            f"Found health claim: {claim.claim} (confidence: {claim.confidence})"
                         )
-                        health_claims.append(claim.text)
+                        health_claims.append(claim.claim)
 
             except Exception as e:
                 current_app.logger.error(f"Error during claim extraction: {str(e)}")

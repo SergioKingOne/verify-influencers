@@ -29,16 +29,33 @@ class ClaimVerificationService:
         try:
             current_app.logger.info(f"Searching PubMed for: {query}")
             results = self.pubmed.query(query, max_results=max_results)
-            articles = [
-                {
-                    "title": article.title,
-                    "abstract": article.abstract,
-                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{article.pmid}/",
-                }
-                for article in results
-            ]
+            articles = []
+
+            for article in results:
+                try:
+                    # Safely extract PMID
+                    pmid = getattr(article, "pubmed_id", None)
+                    if not pmid:
+                        continue
+
+                    articles.append(
+                        {
+                            "title": article.title if hasattr(article, "title") else "",
+                            "abstract": (
+                                article.abstract if hasattr(article, "abstract") else ""
+                            ),
+                            "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                        }
+                    )
+                except AttributeError as e:
+                    current_app.logger.warning(
+                        f"Skipping article due to missing attribute: {e}"
+                    )
+                    continue
+
             current_app.logger.info(f"Found {len(articles)} PubMed articles")
             return articles
+
         except Exception as e:
             current_app.logger.error(f"Error searching PubMed: {e}")
             return []
