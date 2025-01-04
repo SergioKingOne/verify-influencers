@@ -5,47 +5,39 @@ import { mockInfluencerData } from "../mock/influencerData";
 const cache = new Map();
 
 const useInfluencerData = (username) => {
-  const [data, setData] = useState(() => cache.get(username) || null);
+  // Initialize with cached data if available
+  const [data, setData] = useState(() => cache.get(username));
   const [loading, setLoading] = useState(!cache.has(username));
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // If we already have cached data, don't fetch again
+    // If we have cached data, use it and don't fetch
     if (cache.has(username)) {
+      console.log("Using cached data for", username);
+      setData(cache.get(username));
+      setLoading(false);
       return;
     }
 
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null); // Reset error state
+        setError(null);
+        console.log("Fetching data for", username);
 
         const response = await fetch(`/api/influencer/${username}`);
-
-        // Handle 429 rate limit specifically
-        if (response.status === 429) {
-          // Fall back to mock data in case of rate limit
-          setData(mockInfluencerData);
-          cache.set(username, mockInfluencerData);
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const jsonData = await response.json();
-        setData(jsonData);
-        cache.set(username, jsonData);
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching data:", err);
 
-        // Fallback to mock data on error in development
+        // Cache and use the successful response
+        console.log("Caching response for", username);
+        cache.set(username, jsonData);
+        setData(jsonData);
+      } catch (err) {
+        console.error("Error fetching data:", err);
         if (import.meta.env.DEV) {
           setData(mockInfluencerData);
-          cache.set(username, mockInfluencerData);
-          setError(null); // Clear error since we're using fallback data
+        } else {
+          setError(err.message);
         }
       } finally {
         setLoading(false);
