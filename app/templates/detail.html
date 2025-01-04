@@ -2,20 +2,38 @@
 <html>
   <head>
     <title>Influencer Detail</title>
+    <style>
+      .error-message {
+        color: red;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid red;
+        background-color: #ffe6e6;
+      }
+    </style>
   </head>
   <body>
     <h1>Influencer Detail Page</h1>
 
+    {% with messages = get_flashed_messages() %} {% if messages %} {% for
+    message in messages %}
+    <div class="error-message">{{ message }}</div>
+    {% endfor %} {% endif %} {% endwith %} {% if not error %}
     <h2>Tweets:</h2>
+    {% if tweets %}
     <ul>
       {% for tweet in tweets %}
       <li>{{ tweet }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p>No tweets found.</p>
+    {% endif %}
 
     <h2>Health Claims:</h2>
+    {% if verification_results %}
     <ul>
-      {% for claim, result in verification_results.items %}
+      {% for claim, result in verification_results.items() %}
       <li>
         <strong>Claim:</strong> {{ claim }}<br />
         <strong>Verification Status:</strong> {{ result.verification_status
@@ -48,5 +66,8 @@
       </li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p>No health claims found.</p>
+    {% endif %} {% endif %}
   </body>
 </html>

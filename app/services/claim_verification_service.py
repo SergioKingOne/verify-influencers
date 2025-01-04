@@ -9,7 +9,7 @@ logger = getLogger(__name__)
 class ClaimVerificationService:
     def __init__(self):
         self.pubmed = PubMed(
-            tool="HealthClaimVerifier", email="your_email@example.com"
+            tool="HealthClaimVerifier", email="sergiorobayoro@example.com"
         )  # Replace with your email
         self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
 

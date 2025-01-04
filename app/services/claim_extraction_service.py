@@ -1,4 +1,3 @@
-# app/services/claim_extraction_service.py
 import ollama
 
 

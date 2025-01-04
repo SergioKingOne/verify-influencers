@@ -1,5 +1,4 @@
-# app/routes.py
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, flash
 from app.services.twitter_service import TwitterService
 from app.services.claim_extraction_service import ClaimExtractionService
 from app.services.claim_verification_service import ClaimVerificationService
@@ -15,30 +14,53 @@ def index():
 
 @main.route("/influencer")
 def influencer_detail():
-    with current_app.app_context():
-        twitter_service = TwitterService()
-        tweets = twitter_service.get_tweets("hubermanlab", 50)
+    tweets = []
+    health_claims = []
+    verification_results = {}
 
-        claim_extraction_service = ClaimExtractionService()
-        health_claims = claim_extraction_service.extract_health_claims(tweets)
+    try:
+        with current_app.app_context():
+            # Get tweets
+            twitter_service = TwitterService()
+            tweets = twitter_service.get_tweets("hubermanlab", 5)
 
-        data_processing_service = DataProcessingService()
-        unique_claims = data_processing_service.remove_duplicate_claims(health_claims)
+            if tweets is None:
+                flash(
+                    "Unable to fetch tweets. Twitter API rate limit may have been exceeded.",
+                    "error",
+                )
+                return render_template(
+                    "detail.html",
+                    tweets=[],
+                    health_claims=[],
+                    verification_results={},
+                    error=True,
+                )
 
-        claim_verification_service = ClaimVerificationService()
+            # Extract and process claims
+            claim_extraction_service = ClaimExtractionService()
+            health_claims = claim_extraction_service.extract_health_claims(tweets)
 
-        verification_results = {}
-        for claim in unique_claims:
-            verification_results[claim] = claim_verification_service.verify_claim(claim)
+            if health_claims:
+                data_processing_service = DataProcessingService()
+                unique_claims = data_processing_service.remove_duplicate_claims(
+                    health_claims
+                )
 
-    if tweets is None:
-        tweets = []
-    if health_claims is None:
-        health_claims = []
+                claim_verification_service = ClaimVerificationService()
+                for claim in unique_claims:
+                    verification_results[claim] = (
+                        claim_verification_service.verify_claim(claim)
+                    )
+
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "error")
+        current_app.logger.error(f"Error in influencer_detail: {str(e)}")
 
     return render_template(
         "detail.html",
-        tweets=tweets,
-        health_claims=health_claims,
+        tweets=tweets or [],
+        health_claims=health_claims or [],
         verification_results=verification_results,
+        error=False,
     )
