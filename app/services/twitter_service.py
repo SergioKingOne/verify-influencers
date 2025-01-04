@@ -71,6 +71,8 @@ class TwitterService:
                 username=username, user_fields=["profile_image_url", "public_metrics"]
             )
 
+            current_app.logger.info(f"User info: {user.data}")
+
             if user.data is None:
                 current_app.logger.error(f"No user found with username '{username}'")
                 return None
