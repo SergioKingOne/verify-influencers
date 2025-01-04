@@ -31,11 +31,17 @@ class ClaimExtractionService:
 
         for tweet in tweets:
             prompt = f"""
-            Identify any health claims made by the author in the following tweet.
-            Return the result in JSON format with an array of claims.
-            Each claim should have a text field and confidence score.
-
+            Identify any health claims made by the author in the following tweet. For each claim, rate your confidence (0.0-1.0) in the scientific validity of the claim based on current medical consensus.
+            
+            A confidence of:
+            - 1.0: Strongly supported by multiple peer-reviewed studies
+            - 0.7-0.9: Supported by some scientific evidence
+            - 0.4-0.6: Limited or mixed scientific evidence
+            - 0.0-0.3: Little to no scientific support or contradicts current evidence
+            
             Tweet: {tweet}
+            
+            Respond using JSON format.
             """
             try:
                 response = ollama.chat(
