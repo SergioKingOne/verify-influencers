@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import {
   Card,
@@ -10,6 +10,34 @@ import {
 const InfluencerDetails = () => {
   const [activeCategory, setActiveCategory] = useState('All Categories');
   const [activeStatus, setActiveStatus] = useState('All Statuses');
+  const [influencerData, setInfluencerData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchInfluencerData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/influencer/hubermanlab');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setInfluencerData(data);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInfluencerData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!influencerData) return <div>No data available</div>;
 
   const categories = [
     'All Categories', 'Sleep', 'Performance', 'Hormones', 'Nutrition',
@@ -42,9 +70,17 @@ const InfluencerDetails = () => {
         {/* Profile Section */}
         <div className="mb-8">
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-gray-700" />
+            <div className="w-24 h-24 rounded-full bg-gray-700">
+              {influencerData.profile_image && (
+                <img 
+                  src={influencerData.profile_image} 
+                  alt="Profile" 
+                  className="w-full h-full rounded-full"
+                />
+              )}
+            </div>
             <div>
-              <h1 className="text-2xl font-bold">Andrew Huberman</h1>
+              <h1 className="text-2xl font-bold">{influencerData.username}</h1>
               <div className="flex gap-2 text-gray-400 mt-1">
                 <span>Neuroscience</span>
                 <span>•</span>
