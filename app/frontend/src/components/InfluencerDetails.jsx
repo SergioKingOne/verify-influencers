@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import {
   Card,
@@ -6,34 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import useInfluencerData from '@/hooks/useInfluencerData';
 
 const InfluencerDetails = () => {
   const [activeCategory, setActiveCategory] = useState('All Categories');
   const [activeStatus, setActiveStatus] = useState('All Statuses');
-  const [influencerData, setInfluencerData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchInfluencerData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/influencer/hubermanlab');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        setInfluencerData(data);
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInfluencerData();
-  }, []);
+  
+  const { data: influencerData, loading, error } = useInfluencerData('hubermanlab');
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
