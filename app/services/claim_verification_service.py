@@ -123,3 +123,37 @@ class ClaimVerificationService:
             "contradicting_evidence": contradicting_evidence,
             "pubmed_results": pubmed_results,
         }
+
+    def calculate_trust_score(self, verification_results):
+        """
+        Calculates a trust score based on verification results.
+
+        Scoring system:
+        - Verified: +2 points
+        - Questionable: +0 points
+        - Debunked: -1 point
+
+        Returns:
+        - score: 0-100 scale
+        - total_claims: number of claims analyzed
+        """
+        if not verification_results:
+            return 0, 0
+
+        points = 0
+        total_claims = len(verification_results)
+
+        for result in verification_results.values():
+            status = result.get("verification_status", "")
+            if status == "Verified":
+                points += 2
+            elif status == "Debunked":
+                points -= 1
+
+        # Convert to 0-100 scale
+        max_possible = total_claims * 2  # If all claims were verified
+        if max_possible == 0:
+            return 0, 0
+
+        normalized_score = min(100, max(0, (points / max_possible) * 100))
+        return round(normalized_score), total_claims

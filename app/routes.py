@@ -43,6 +43,11 @@ def influencer_detail(username):
                         claim_verification_service.verify_claim(claim)
                     )
 
+            # Calculate trust score
+            trust_score, total_claims = (
+                claim_verification_service.calculate_trust_score(verification_results)
+            )
+
             return jsonify(
                 {
                     "username": username,
@@ -55,6 +60,8 @@ def influencer_detail(username):
                     "tweets": tweets,
                     "health_claims": health_claims,
                     "verification_results": verification_results,
+                    "trust_score": trust_score,
+                    "total_claims": total_claims,
                 }
             )
 

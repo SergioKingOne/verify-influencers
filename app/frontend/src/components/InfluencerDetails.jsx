@@ -8,9 +8,30 @@ import {
 } from "@/components/ui/card";
 import useInfluencerData from '@/hooks/useInfluencerData';
 
+const TrustScoreIndicator = ({ score }) => {
+  const getColor = (score) => {
+    if (score >= 90) return 'bg-emerald-400';
+    if (score >= 70) return 'bg-green-400';
+    if (score >= 50) return 'bg-yellow-400';
+    if (score >= 30) return 'bg-orange-400';
+    return 'bg-red-400';
+  };
+
+  return (
+    <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+      <div 
+        className={`h-full rounded-full ${getColor(score)} transition-all duration-500`}
+        style={{ width: `${score}%` }}
+      />
+    </div>
+  );
+};
+
 const InfluencerDetails = () => {
   const [activeCategory, setActiveCategory] = useState('All Categories');
   const [activeStatus, setActiveStatus] = useState('All Statuses');
+  
+  const statuses = ['All Statuses', 'Verified', 'Questionable', 'Debunked'];
   
   const { data: influencerData, loading, error } = useInfluencerData('hubermanlab');
 
@@ -39,6 +60,14 @@ const InfluencerDetails = () => {
     const matchesStatus = activeStatus === 'All Statuses' || claim.status === activeStatus;
     return matchesCategory && matchesStatus;
   });
+
+  const getTrustLabel = (score) => {
+    if (score >= 90) return "Highly Trustworthy";
+    if (score >= 70) return "Generally Trustworthy";
+    if (score >= 50) return "Moderately Trustworthy";
+    if (score >= 30) return "Exercise Caution";
+    return "Low Trust Score";
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -75,10 +104,18 @@ const InfluencerDetails = () => {
                 <CardTitle className="text-sm text-gray-400">Trust Score</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-400">
-                  {Math.round(claims.reduce((acc, claim) => acc + claim.trustScore, 0) / claims.length)}%
+                <div className="flex items-center gap-2">
+                  <div className="text-3xl font-bold text-emerald-400">
+                    {influencerData.trust_score}%
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Based on {influencerData.total_claims} claims
+                  </div>
                 </div>
-                <div className="text-xs text-gray-400 mt-1">Based on {claims.length} verified claims</div>
+                <TrustScoreIndicator score={influencerData.trust_score} />
+                <div className="mt-2 text-xs text-gray-400">
+                  {getTrustLabel(influencerData.trust_score)}
+                </div>
               </CardContent>
             </Card>
             

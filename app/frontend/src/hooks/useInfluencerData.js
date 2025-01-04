@@ -11,10 +11,13 @@ const useInfluencerData = (username) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // If we have cached data, use it and don't fetch
-    if (cache.has(username)) {
-      console.log("Using cached data for", username);
-      setData(cache.get(username));
+    // Debug current mode
+    console.log("Current mode:", import.meta.env.MODE);
+
+    // Only use mock data if explicitly in development mode
+    if (import.meta.env.MODE === "development") {
+      console.log("Using mock data in dev mode for", username);
+      setData(mockInfluencerData);
       setLoading(false);
       return;
     }
@@ -23,22 +26,28 @@ const useInfluencerData = (username) => {
       try {
         setLoading(true);
         setError(null);
-        console.log("Fetching data for", username);
+        console.log("About to fetch data for", username);
+        console.log("Fetch URL:", `/api/influencer/${username}`);
 
         const response = await fetch(`/api/influencer/${username}`);
-        const jsonData = await response.json();
+        console.log("Response received:", response.status, response.statusText);
 
-        // Cache and use the successful response
-        console.log("Caching response for", username);
-        cache.set(username, jsonData);
+        const jsonData = await response.json();
+        console.log("Parsed data:", jsonData);
+
+        // Cache only in production mode
+        if (import.meta.env.MODE === "production") {
+          console.log("Caching response for", username);
+          cache.set(username, jsonData);
+        }
         setData(jsonData);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        if (import.meta.env.DEV) {
-          setData(mockInfluencerData);
-        } else {
-          setError(err.message);
-        }
+        console.error("Detailed error:", {
+          message: err.message,
+          stack: err.stack,
+          err,
+        });
+        setError(err.message);
       } finally {
         setLoading(false);
       }
