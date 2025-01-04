@@ -7,6 +7,9 @@ import os
 def setup_logger(app):
     """Configure logging for the application"""
 
+    # Clear existing handlers first
+    app.logger.handlers.clear()
+
     # Create logs directory if it doesn't exist
     if not os.path.exists("logs"):
         os.makedirs("logs")
@@ -34,12 +37,5 @@ def setup_logger(app):
     # Add handlers to the app logger
     app.logger.addHandler(file_handler)
     app.logger.addHandler(console_handler)
-
-    # Remove default Flask handler
-    (
-        app.logger.removeHandler(default_handler)
-        if (default_handler := app.logger.handlers[0])
-        else None
-    )
 
     return app.logger
