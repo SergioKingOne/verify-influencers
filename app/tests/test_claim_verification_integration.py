@@ -1,12 +1,15 @@
 import pytest
 from flask import Flask
 from app.services.claim_verification_service import ClaimVerificationService
+from app.utils.logger import setup_logger
 
 
 @pytest.fixture
 def app():
     """Create a Flask app for testing"""
     app = Flask(__name__)
+    # Setup logger for testing
+    setup_logger(app)
     return app
 
 
