@@ -1,4 +1,5 @@
 import tweepy
+from flask import current_app
 from app import create_app
 
 
@@ -29,9 +30,11 @@ class TwitterService:
             # The new Twitter v2 API uses user ID instead of screen name
             user = self.client.get_user(username=username)
             if user.data is None:
-                print(f"Error: No user found with username '{username}'.")
+                current_app.logger.error(f"No user found with username '{username}'")
                 return None
             user_id = user.data.id
+
+            current_app.logger.info(f"Fetching {num_tweets} tweets for user {username}")
 
             response = self.client.get_users_tweets(
                 id=user_id,
@@ -40,16 +43,17 @@ class TwitterService:
             )
 
             tweets = [tweet.text for tweet in response.data]
+            current_app.logger.info(f"Successfully fetched {len(tweets)} tweets")
             return tweets
 
         except tweepy.TooManyRequests as e:
-            print(f"Rate limit exceeded. Please wait before making more requests: {e}")
+            current_app.logger.error(f"Rate limit exceeded: {e}")
             return None
         except tweepy.NotFound as e:
-            print(f"User '{username}' not found: {e}")
+            current_app.logger.error(f"User '{username}' not found: {e}")
             return None
         except tweepy.TweepyException as e:
-            print(f"Error fetching tweets: {e}")
+            current_app.logger.error(f"Twitter API error: {e}")
             return None
 
 

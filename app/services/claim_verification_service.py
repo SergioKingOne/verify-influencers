@@ -1,9 +1,7 @@
 from typing import List, Dict, Any
 from pymed import PubMed
 from sentence_transformers import SentenceTransformer, util
-from logging import getLogger
-
-logger = getLogger(__name__)
+from flask import current_app
 
 
 class ClaimVerificationService:
@@ -12,6 +10,7 @@ class ClaimVerificationService:
             tool="HealthClaimVerifier", email="sergiorobayoro@example.com"
         )  # Replace with your email
         self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+        current_app.logger.info("Initialized ClaimVerificationService")
 
     def search_pubmed(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """
@@ -28,8 +27,9 @@ class ClaimVerificationService:
             PubMedSearchError: If there's an error accessing PubMed.
         """
         try:
+            current_app.logger.info(f"Searching PubMed for: {query}")
             results = self.pubmed.query(query, max_results=max_results)
-            return [
+            articles = [
                 {
                     "title": article.title,
                     "abstract": article.abstract,
@@ -37,8 +37,10 @@ class ClaimVerificationService:
                 }
                 for article in results
             ]
+            current_app.logger.info(f"Found {len(articles)} PubMed articles")
+            return articles
         except Exception as e:
-            logger.error(f"Error searching PubMed: {e}")
+            current_app.logger.error(f"Error searching PubMed: {e}")
             return []
 
     def calculate_similarity(self, claim, abstract):
