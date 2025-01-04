@@ -18,23 +18,35 @@ const useInfluencerData = (username) => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null); // Reset error state
 
-        if (import.meta.env.MODE === "development") {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+        const response = await fetch(`/api/influencer/${username}`);
+
+        // Handle 429 rate limit specifically
+        if (response.status === 429) {
+          // Fall back to mock data in case of rate limit
           setData(mockInfluencerData);
           cache.set(username, mockInfluencerData);
-        } else {
-          const response = await fetch(`/api/influencer/${username}`);
-          if (!response.ok) {
-            throw new Error("Network response was not ok");
-          }
-          const jsonData = await response.json();
-          setData(jsonData);
-          cache.set(username, jsonData);
+          return;
         }
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const jsonData = await response.json();
+        setData(jsonData);
+        cache.set(username, jsonData);
       } catch (err) {
         setError(err.message);
         console.error("Error fetching data:", err);
+
+        // Fallback to mock data on error in development
+        if (import.meta.env.DEV) {
+          setData(mockInfluencerData);
+          cache.set(username, mockInfluencerData);
+          setError(null); // Clear error since we're using fallback data
+        }
       } finally {
         setLoading(false);
       }
