@@ -22,7 +22,7 @@ def influencer_detail():
         with current_app.app_context():
             # Get tweets
             twitter_service = TwitterService()
-            tweets = twitter_service.get_tweets("hubermanlab", 5)
+            tweets = twitter_service.get_tweets("hubermanlab", 10)
 
             if tweets is None:
                 flash(
