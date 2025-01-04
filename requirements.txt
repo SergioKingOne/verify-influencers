@@ -5,3 +5,5 @@ transformers
 ollama
 sentence-transformers
 pymed
+pydantic
+pytest
