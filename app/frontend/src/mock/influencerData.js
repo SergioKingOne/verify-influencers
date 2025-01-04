@@ -1,7 +1,7 @@
 export const mockInfluencerData = {
   username: "hubermanlab",
   profile_image:
-    "https://pbs.twimg.com/profile_images/1481403466595074051/RyhLZXXm_400x400.jpg",
+    "https://pbs.twimg.com/profile_images/1339713932085346306/jDTi4HKH_400x400.jpg",
   follower_count: 4200000,
   tweets: [
     "New research shows that viewing sunlight within 30-50 minutes of waking enhances cortisol release and improves energy levels throughout the day.",
