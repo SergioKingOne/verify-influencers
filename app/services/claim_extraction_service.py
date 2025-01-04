@@ -31,7 +31,7 @@ class ClaimExtractionService:
 
         for tweet in tweets:
             prompt = f"""
-            Identify any health claims in the following tweet.
+            Identify any health claims made by the author in the following tweet.
             Return the result in JSON format with an array of claims.
             Each claim should have a text field and confidence score.
 
