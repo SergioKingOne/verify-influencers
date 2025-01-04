@@ -1,29 +1,36 @@
 import { useState, useEffect } from "react";
 import { mockInfluencerData } from "../mock/influencerData";
 
+// Cache object outside the hook
+const cache = new Map();
+
 const useInfluencerData = (username) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => cache.get(username) || null);
+  const [loading, setLoading] = useState(!cache.has(username));
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // If we already have cached data, don't fetch again
+    if (cache.has(username)) {
+      return;
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Check if we're in development mode and should use mock data
         if (import.meta.env.MODE === "development") {
-          // Simulate network delay
           await new Promise((resolve) => setTimeout(resolve, 500));
           setData(mockInfluencerData);
+          cache.set(username, mockInfluencerData);
         } else {
-          // Real API call
           const response = await fetch(`/api/influencer/${username}`);
           if (!response.ok) {
             throw new Error("Network response was not ok");
           }
           const jsonData = await response.json();
           setData(jsonData);
+          cache.set(username, jsonData);
         }
       } catch (err) {
         setError(err.message);
