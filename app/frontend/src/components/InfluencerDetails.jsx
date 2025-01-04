@@ -8,9 +8,30 @@ import {
 } from "@/components/ui/card";
 import useInfluencerData from '@/hooks/useInfluencerData';
 
+const TrustScoreIndicator = ({ score }) => {
+  const getColor = (score) => {
+    if (score >= 90) return 'bg-emerald-400';
+    if (score >= 70) return 'bg-green-400';
+    if (score >= 50) return 'bg-yellow-400';
+    if (score >= 30) return 'bg-orange-400';
+    return 'bg-red-400';
+  };
+
+  return (
+    <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+      <div 
+        className={`h-full rounded-full ${getColor(score)} transition-all duration-500`}
+        style={{ width: `${score}%` }}
+      />
+    </div>
+  );
+};
+
 const InfluencerDetails = () => {
   const [activeCategory, setActiveCategory] = useState('All Categories');
   const [activeStatus, setActiveStatus] = useState('All Statuses');
+  
+  const statuses = ['All Statuses', 'Verified', 'Questionable', 'Debunked'];
   
   const { data: influencerData, loading, error } = useInfluencerData('hubermanlab');
 
@@ -18,30 +39,35 @@ const InfluencerDetails = () => {
   if (error) return <div>Error: {error}</div>;
   if (!influencerData) return <div>No data available</div>;
 
+  // Extract categories from health claims
   const categories = [
-    'All Categories', 'Sleep', 'Performance', 'Hormones', 'Nutrition',
-    'Exercise', 'Stress', 'Cognition', 'Motivation', 'Recovery', 'Mental Health'
+    'All Categories',
+    ...new Set(Object.keys(influencerData.verification_results || {}))
   ];
 
-  const statuses = ['All Statuses', 'Verified', 'Questionable', 'Debunked'];
+  // Transform verification results into claims array
+  const claims = Object.entries(influencerData.verification_results || {}).map(([claim, result], index) => ({
+    id: index + 1,
+    title: claim,
+    status: result.verification_status,
+    date: new Date().toLocaleDateString(), // You might want to add dates to your API response
+    trustScore: result.supporting_evidence.length * 30 + 40, // Simple score calculation
+    aiAnalysis: result.supporting_evidence[0], // Use first supporting evidence as analysis
+  }));
 
-  const claims = [
-    {
-      id: 1,
-      title: 'Viewing sunlight within 30-50 minutes of waking enhances cortisol release',
-      status: 'Verified',
-      date: '14/01/2024',
-      trustScore: 92,
-      aiAnalysis: 'Multiple studies confirm morning light exposure affects cortisol rhythms. Timing window supported by research.',
-    },
-    {
-      id: 2,
-      title: 'Non-sleep deep rest (NSDR) protocols can accelerate learning and recovery',
-      status: 'Verified',
-      date: '28/12/2023',
-      trustScore: 88,
-    }
-  ];
+  const filteredClaims = claims.filter(claim => {
+    const matchesCategory = activeCategory === 'All Categories' || claim.title.toLowerCase().includes(activeCategory.toLowerCase());
+    const matchesStatus = activeStatus === 'All Statuses' || claim.status === activeStatus;
+    return matchesCategory && matchesStatus;
+  });
+
+  const getTrustLabel = (score) => {
+    if (score >= 90) return "Highly Trustworthy";
+    if (score >= 70) return "Generally Trustworthy";
+    if (score >= 50) return "Moderately Trustworthy";
+    if (score >= 30) return "Exercise Caution";
+    return "Low Trust Score";
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -54,26 +80,20 @@ const InfluencerDetails = () => {
                 <img 
                   src={influencerData.profile_image} 
                   alt="Profile" 
-                  className="w-full h-full rounded-full"
+                  className="w-full h-full rounded-full object-cover"
                 />
               )}
             </div>
             <div>
               <h1 className="text-2xl font-bold">{influencerData.username}</h1>
-              <div className="flex gap-2 text-gray-400 mt-1">
-                <span>Neuroscience</span>
-                <span>•</span>
-                <span>Sleep</span>
-                <span>•</span>
-                <span>Performance</span>
-                <span>•</span>
-                <span>Hormones</span>
+              <div className="flex gap-2 text-gray-400 mt-1 flex-wrap">
+                {influencerData.tweets?.slice(0, 3).map((tweet, index) => (
+                  <React.Fragment key={index}>
+                    {index > 0 && <span>•</span>}
+                    <span>{tweet.substring(0, 30)}...</span>
+                  </React.Fragment>
+                ))}
               </div>
-              <p className="text-gray-400 mt-2 max-w-2xl">
-                Stanford Professor of Neurobiology and Ophthalmology, focusing on neural development, 
-                brain plasticity, and neural regeneration. Host of the Huberman Lab Podcast, translating 
-                neuroscience into practical tools for everyday life.
-              </p>
             </div>
           </div>
 
@@ -84,8 +104,18 @@ const InfluencerDetails = () => {
                 <CardTitle className="text-sm text-gray-400">Trust Score</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-400">89%</div>
-                <div className="text-xs text-gray-400 mt-1">Based on 127 verified claims</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-3xl font-bold text-emerald-400">
+                    {influencerData.trust_score}%
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Based on {influencerData.total_claims} claims
+                  </div>
+                </div>
+                <TrustScoreIndicator score={influencerData.trust_score} />
+                <div className="mt-2 text-xs text-gray-400">
+                  {getTrustLabel(influencerData.trust_score)}
+                </div>
               </CardContent>
             </Card>
             
@@ -184,13 +214,17 @@ const InfluencerDetails = () => {
 
         {/* Claims List */}
         <div className="space-y-4">
-          <div className="text-sm text-gray-400">Showing 10 claims</div>
-          {claims.map((claim) => (
+          <div className="text-sm text-gray-400">Showing {filteredClaims.length} claims</div>
+          {filteredClaims.map((claim) => (
             <div key={claim.id} className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 text-xs rounded-full bg-emerald-400/20 text-emerald-400">
-                    verified
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    claim.status === 'Verified' ? 'bg-emerald-400/20 text-emerald-400' :
+                    claim.status === 'Questionable' ? 'bg-yellow-400/20 text-yellow-400' :
+                    'bg-red-400/20 text-red-400'
+                  }`}>
+                    {claim.status.toLowerCase()}
                   </span>
                   <span className="text-gray-400 text-sm">{claim.date}</span>
                 </div>
