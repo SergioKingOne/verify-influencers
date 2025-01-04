@@ -56,6 +56,34 @@ class TwitterService:
             current_app.logger.error(f"Twitter API error: {e}")
             return None
 
+    def get_user_info(self, username: str) -> dict:
+        """
+        Fetches user profile information.
+
+        Args:
+            username: The Twitter handle of the user (without the @)
+
+        Returns:
+            Dictionary containing user information including profile image and follower count
+        """
+        try:
+            user = self.client.get_user(
+                username=username, user_fields=["profile_image_url", "public_metrics"]
+            )
+
+            if user.data is None:
+                current_app.logger.error(f"No user found with username '{username}'")
+                return None
+
+            return {
+                "profile_image": user.data.profile_image_url,
+                "follower_count": user.data.public_metrics["followers_count"],
+            }
+
+        except Exception as e:
+            current_app.logger.error(f"Error fetching user info: {e}")
+            return None
+
 
 # Example usage (you can test this outside the class for now)
 if __name__ == "__main__":

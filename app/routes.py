@@ -17,12 +17,14 @@ def influencer_detail():
     tweets = []
     health_claims = []
     verification_results = {}
+    username = "hubermanlab"  # This could be made dynamic via query parameter
 
     try:
         with current_app.app_context():
-            # Get tweets
+            # Get tweets and user info
             twitter_service = TwitterService()
-            tweets = twitter_service.get_tweets("hubermanlab", 10)
+            user_info = twitter_service.get_user_info(username)
+            tweets = twitter_service.get_tweets(username, 10)
 
             if tweets is None:
                 flash(
@@ -59,6 +61,9 @@ def influencer_detail():
 
     return render_template(
         "detail.html",
+        username=username,
+        profile_image=user_info.get("profile_image") if user_info else None,
+        follower_count=user_info.get("follower_count") if user_info else None,
         tweets=tweets or [],
         health_claims=health_claims or [],
         verification_results=verification_results,
